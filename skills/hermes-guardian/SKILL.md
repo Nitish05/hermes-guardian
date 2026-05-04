@@ -46,10 +46,14 @@ Important fields:
 - `last_event`: latest state-changing event.
 - `last_intruder_event_at`: last unknown-person detection time.
 - `missed_phone_count` / `returned_phone_count`: grace-window counters.
+- `presence_score`, `presence_threshold`, and `presence_signals`: why the tool decided home or away.
 
 ## Guidance
 
 - Do not assume one missed ping means the user left; the tool uses a grace window.
+- For iPhones, prefer router/AP association via `presence.router_command`; ping alone is unreliable during sleep.
+- Router command contract: exit `0` means associated/home, nonzero means away.
+- Use multi-signal scoring by giving router association a strong weight and ping a weak supporting weight.
 - Default person detection is OpenCV HOG, which avoids `torch`, `ultralytics`, `dlib`, and `face-recognition`.
 - On Debian/Raspberry Pi OS, use `python3-opencv` and a `--system-site-packages` venv instead of pip-building OpenCV.
 - Default identity is phone-presence based: person plus reachable phone means owner/home; person plus unreachable phone raises the alert flag.

@@ -23,6 +23,16 @@ class PhoneConfig:
 
 
 @dataclass(slots=True)
+class PresenceConfig:
+    home_score_threshold: float = 1.0
+    ping_enabled: bool = True
+    ping_weight: float = 1.0
+    router_command: str = ""
+    router_command_weight: float = 2.0
+    router_command_timeout_seconds: float = 5.0
+
+
+@dataclass(slots=True)
 class CameraConfig:
     source: int | str = 0
     frame_width: int = 640
@@ -73,6 +83,7 @@ class PathConfig:
 @dataclass(slots=True)
 class GuardianConfig:
     phone: PhoneConfig = field(default_factory=PhoneConfig)
+    presence: PresenceConfig = field(default_factory=PresenceConfig)
     camera: CameraConfig = field(default_factory=CameraConfig)
     detection: DetectionConfig = field(default_factory=DetectionConfig)
     face: FaceConfig = field(default_factory=FaceConfig)
@@ -100,6 +111,7 @@ class GuardianConfig:
     def from_mapping(cls, data: dict[str, Any]) -> "GuardianConfig":
         return cls(
             phone=_merge_dataclass(PhoneConfig, data.get("phone", {})),
+            presence=_merge_dataclass(PresenceConfig, data.get("presence", {})),
             camera=_merge_dataclass(CameraConfig, data.get("camera", {})),
             detection=_merge_dataclass(DetectionConfig, data.get("detection", {})),
             face=_merge_dataclass(FaceConfig, data.get("face", {})),
@@ -107,12 +119,22 @@ class GuardianConfig:
         )
 
     def validate(self, *, require_phone: bool = True) -> None:
-        if require_phone and not self.phone.ip:
-            raise ValueError("phone.ip must be set in the config.")
+        if require_phone and not self.presence.ping_enabled and not self.presence.router_command:
+            raise ValueError("At least one presence signal must be enabled.")
+        if require_phone and self.presence.ping_enabled and not self.phone.ip:
+            raise ValueError("phone.ip must be set when presence.ping_enabled is true.")
         if self.phone.missed_ping_threshold < 1:
             raise ValueError("phone.missed_ping_threshold must be at least 1.")
         if self.phone.return_ping_threshold < 1:
             raise ValueError("phone.return_ping_threshold must be at least 1.")
+        if self.presence.home_score_threshold <= 0:
+            raise ValueError("presence.home_score_threshold must be greater than 0.")
+        if self.presence.ping_weight < 0:
+            raise ValueError("presence.ping_weight must be zero or greater.")
+        if self.presence.router_command_weight < 0:
+            raise ValueError("presence.router_command_weight must be zero or greater.")
+        if self.presence.router_command_timeout_seconds <= 0:
+            raise ValueError("presence.router_command_timeout_seconds must be greater than 0.")
         if self.camera.sample_fps <= 0:
             raise ValueError("camera.sample_fps must be greater than 0.")
         if self.detection.backend not in {"hog", "yolo"}:
@@ -133,6 +155,7 @@ class GuardianConfig:
     def to_dict(self) -> dict[str, Any]:
         return {
             "phone": asdict(self.phone),
+            "presence": asdict(self.presence),
             "camera": asdict(self.camera),
             "detection": asdict(self.detection),
             "face": asdict(self.face),

@@ -7,6 +7,14 @@ phone:
   missed_ping_threshold: 3
   return_ping_threshold: 2
 
+presence:
+  home_score_threshold: 1.0
+  ping_enabled: true
+  ping_weight: 1.0
+  router_command: ""
+  router_command_weight: 2.0
+  router_command_timeout_seconds: 5.0
+
 camera:
   source: 0
   frame_width: 640

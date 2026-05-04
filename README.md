@@ -135,6 +135,44 @@ phone:
   ip: "192.168.1.50"
 ```
 
+### iPhone Presence
+
+iPhones often stop answering ping while asleep, so the preferred signal is the router/AP
+Wi-Fi association table. Configure a command that asks your router whether the iPhone is
+currently associated:
+
+```yaml
+presence:
+  home_score_threshold: 2.0
+  ping_enabled: false
+  router_command: "/usr/local/bin/is-iphone-associated"
+  router_command_weight: 2.0
+  router_command_timeout_seconds: 5.0
+```
+
+The command contract is simple:
+
+- exit `0`: phone is home / associated
+- any nonzero exit: phone is away / not associated
+
+This keeps router-specific logic outside Hermes Guardian. The command can query UniFi,
+OpenWrt, your router SSH/API, or any local script that checks the AP association table.
+
+If you want multi-signal scoring, enable both router and ping:
+
+```yaml
+presence:
+  home_score_threshold: 2.0
+  ping_enabled: true
+  ping_weight: 0.5
+  router_command: "/usr/local/bin/is-iphone-associated"
+  router_command_weight: 2.0
+```
+
+With that setup, router association is the decisive signal and ping is just supporting
+evidence. The state JSON records `presence_score`, `presence_threshold`, and
+`presence_signals` so Hermes can explain why it decided home or away.
+
 The default webcam is camera index `0`. Check cameras with:
 
 ```bash

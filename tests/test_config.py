@@ -27,6 +27,22 @@ def test_config_validates_backend_specific_confidence():
         )
 
 
+def test_router_only_presence_does_not_require_phone_ip():
+    GuardianConfig.from_mapping(
+        {
+            "presence": {
+                "ping_enabled": False,
+                "router_command": "true",
+            }
+        }
+    ).validate()
+
+
+def test_presence_requires_at_least_one_signal():
+    with pytest.raises(ValueError):
+        GuardianConfig.from_mapping({"presence": {"ping_enabled": False}}).validate()
+
+
 def test_config_rejects_unknown_keys():
     with pytest.raises(ValueError):
         GuardianConfig.from_mapping({"phone": {"nope": True}})

@@ -25,6 +25,9 @@ class GuardianState:
     last_event: str | None = "initialized"
     missed_phone_count: int = 0
     returned_phone_count: int = 0
+    presence_score: float = 0.0
+    presence_threshold: float = 1.0
+    presence_signals: list[dict[str, Any]] = field(default_factory=list)
     updated_at: str = field(default_factory=now_iso)
 
     def to_dict(self) -> dict[str, Any]:
@@ -40,6 +43,9 @@ class GuardianState:
             "last_event": self.last_event,
             "missed_phone_count": self.missed_phone_count,
             "returned_phone_count": self.returned_phone_count,
+            "presence_score": self.presence_score,
+            "presence_threshold": self.presence_threshold,
+            "presence_signals": self.presence_signals,
             "updated_at": self.updated_at,
         }
 

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .config import GuardianConfig
-from .presence import PresenceTracker, check_phone
+from .presence import PresenceResult, PresenceTracker, evaluate_presence
 from .state import GuardianState, StateStore, now_iso
 
 
@@ -23,11 +23,16 @@ def update_presence_once(config: GuardianConfig, store: StateStore) -> GuardianS
         returned_count=state.returned_phone_count,
         guardian_mode=state.guardian_mode,
     )
-    reachable = check_phone(config.phone)
-    event = tracker.observe(reachable)
-    _apply_presence(state, reachable, tracker, event)
+    presence = evaluate_presence(config.phone, config.presence)
+    event = tracker.observe(presence.home)
+    _apply_presence(state, presence, tracker, event)
     store.save(state)
-    store.event(event or "presence_checked", phone_reachable=reachable, mode=state.mode)
+    store.event(
+        event or "presence_checked",
+        phone_reachable=presence.home,
+        mode=state.mode,
+        **presence.to_event_payload(),
+    )
     return state
 
 
@@ -68,15 +73,20 @@ def watch(config: GuardianConfig, store: StateStore) -> None:
                 else config.phone.ping_interval_home_seconds
             )
             if now - last_ping_at >= ping_interval:
-                reachable = check_phone(config.phone)
-                event = tracker.observe(reachable)
+                presence = evaluate_presence(config.phone, config.presence)
+                event = tracker.observe(presence.home)
                 state = store.load()
-                _apply_presence(state, reachable, tracker, event)
+                _apply_presence(state, presence, tracker, event)
                 if event == "returned_home":
                     state.alert_active = False
                     consecutive_unknown = 0
                 store.save(state)
-                store.event(event or "presence_checked", phone_reachable=reachable, mode=state.mode)
+                store.event(
+                    event or "presence_checked",
+                    phone_reachable=presence.home,
+                    mode=state.mode,
+                    **presence.to_event_payload(),
+                )
                 last_ping_at = now
 
             if not tracker.guardian_mode:
@@ -176,17 +186,20 @@ def _classify_person_presence(
 
 def _apply_presence(
     state: GuardianState,
-    reachable: bool,
+    presence: PresenceResult,
     tracker: PresenceTracker,
     event: str | None,
 ) -> None:
-    state.phone_reachable = reachable
+    state.phone_reachable = presence.home
     state.guardian_mode = tracker.guardian_mode
-    state.mode = "guardian" if tracker.guardian_mode else ("home" if reachable else "away")
+    state.mode = "guardian" if tracker.guardian_mode else ("home" if presence.home else "away")
     state.last_event = event
     state.missed_phone_count = tracker.missed_count
     state.returned_phone_count = tracker.returned_count
-    if reachable:
+    state.presence_score = presence.score
+    state.presence_threshold = presence.threshold
+    state.presence_signals = presence.to_event_payload()["presence_signals"]
+    if presence.home:
         state.last_seen_phone_at = now_iso()
 
 
