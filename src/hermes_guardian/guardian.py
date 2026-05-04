@@ -145,6 +145,7 @@ def watch(config: GuardianConfig, store: StateStore) -> None:
                             distance=best_distance,
                             snapshot=str(snapshot) if snapshot else None,
                         )
+                        _notify_unknown_person(config, store, snapshot)
             store.save(state)
             time.sleep(frame_delay)
     finally:
@@ -210,3 +211,15 @@ def _write_snapshot(snapshot_dir: Path, frame) -> Path | None:
     path = snapshot_dir / f"unknown-{now_iso().replace(':', '-')}.jpg"
     ok = cv2.imwrite(str(path), frame)
     return path if ok else None
+
+
+def _notify_unknown_person(config: GuardianConfig, store: StateStore, snapshot: Path | None) -> None:
+    from .notify import send_unknown_person_notification
+
+    result = send_unknown_person_notification(
+        config.notify,
+        state_file=config.paths.state_file,
+        event_log=config.paths.event_log,
+        snapshot=snapshot,
+    )
+    store.event("notify_unknown_person", sent=result.sent, detail=result.detail)

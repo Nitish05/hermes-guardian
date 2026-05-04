@@ -37,6 +37,10 @@ face:
   detection_model: "hog"
   upsample: 0
 
+notify:
+  command: ""
+  timeout_seconds: 10.0
+
 paths:
   state_file: "~/.local/state/hermes-guardian/state.json"
   event_log: "~/.local/state/hermes-guardian/events.jsonl"

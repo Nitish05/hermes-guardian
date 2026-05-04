@@ -61,6 +61,12 @@ class FaceConfig:
 
 
 @dataclass(slots=True)
+class NotifyConfig:
+    command: str = ""
+    timeout_seconds: float = 10.0
+
+
+@dataclass(slots=True)
 class PathConfig:
     state_file: Path = field(
         default_factory=lambda: _expand("~/.local/state/hermes-guardian/state.json")
@@ -87,6 +93,7 @@ class GuardianConfig:
     camera: CameraConfig = field(default_factory=CameraConfig)
     detection: DetectionConfig = field(default_factory=DetectionConfig)
     face: FaceConfig = field(default_factory=FaceConfig)
+    notify: NotifyConfig = field(default_factory=NotifyConfig)
     paths: PathConfig = field(default_factory=PathConfig)
 
     @classmethod
@@ -115,6 +122,7 @@ class GuardianConfig:
             camera=_merge_dataclass(CameraConfig, data.get("camera", {})),
             detection=_merge_dataclass(DetectionConfig, data.get("detection", {})),
             face=_merge_dataclass(FaceConfig, data.get("face", {})),
+            notify=_merge_dataclass(NotifyConfig, data.get("notify", {})),
             paths=_path_config_from_mapping(data.get("paths", {})),
         )
 
@@ -145,6 +153,8 @@ class GuardianConfig:
             raise ValueError("HOG detection.confidence must be zero or greater.")
         if not 0 < self.face.tolerance < 1:
             raise ValueError("face.tolerance must be between 0 and 1.")
+        if self.notify.timeout_seconds <= 0:
+            raise ValueError("notify.timeout_seconds must be greater than 0.")
 
     def ensure_dirs(self) -> None:
         self.paths.state_file.parent.mkdir(parents=True, exist_ok=True)
@@ -159,6 +169,7 @@ class GuardianConfig:
             "camera": asdict(self.camera),
             "detection": asdict(self.detection),
             "face": asdict(self.face),
+            "notify": asdict(self.notify),
             "paths": {
                 "state_file": str(self.paths.state_file),
                 "event_log": str(self.paths.event_log),

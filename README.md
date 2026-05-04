@@ -173,6 +173,30 @@ With that setup, router association is the decisive signal and ping is just supp
 evidence. The state JSON records `presence_score`, `presence_threshold`, and
 `presence_signals` so Hermes can explain why it decided home or away.
 
+### Alert Notification
+
+When guardian mode sees a person while you are away, it always sets `alert_active: true`
+and appends an `unknown_person` event. To actively notify Hermes, configure a command:
+
+```yaml
+notify:
+  command: "/usr/local/bin/hermes-guardian-notify"
+  timeout_seconds: 10.0
+```
+
+The command runs once per alert cooldown and receives:
+
+```text
+GUARDIAN_EVENT=unknown_person
+GUARDIAN_STATE_FILE=~/.local/state/hermes-guardian/state.json
+GUARDIAN_EVENT_LOG=~/.local/state/hermes-guardian/events.jsonl
+GUARDIAN_SNAPSHOT=/path/to/snapshot.jpg
+```
+
+Point `notify.command` at a Hermes CLI wrapper, webhook script, or any local notifier that
+can alert you. The durable state flag remains the source of truth even if notification
+delivery fails.
+
 The default webcam is camera index `0`. Check cameras with:
 
 ```bash
