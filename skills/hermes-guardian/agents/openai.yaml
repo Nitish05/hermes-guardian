@@ -1,0 +1,8 @@
+interface:
+  display_name: "Hermes Guardian"
+  short_description: "Use the Pi room guardian CLI and state file."
+  default_prompt: "Use $hermes-guardian to check the room guardian state and explain any active alert."
+
+policy:
+  allow_implicit_invocation: true
+

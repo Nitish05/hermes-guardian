@@ -1,0 +1,16 @@
+[Unit]
+Description=Hermes Guardian
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/hermes-guardian
+ExecStart=/home/pi/hermes-guardian/.venv/bin/guardian watch --config /home/pi/.config/hermes-guardian/config.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+

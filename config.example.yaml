@@ -1,0 +1,33 @@
+phone:
+  ip: "192.168.1.50"
+  ping_count: 1
+  ping_timeout_seconds: 1.0
+  ping_interval_home_seconds: 180.0
+  ping_interval_guardian_seconds: 30.0
+  missed_ping_threshold: 3
+  return_ping_threshold: 2
+
+camera:
+  source: 0
+  frame_width: 640
+  frame_height: 480
+  sample_fps: 2.0
+
+detection:
+  model: "yolo11n.pt"
+  confidence: 0.45
+  image_size: 416
+  consecutive_unknown_threshold: 2
+  alert_cooldown_seconds: 60.0
+
+face:
+  tolerance: 0.6
+  detection_model: "hog"
+  upsample: 0
+
+paths:
+  state_file: "~/.local/state/hermes-guardian/state.json"
+  event_log: "~/.local/state/hermes-guardian/events.jsonl"
+  data_dir: "~/.local/share/hermes-guardian"
+  snapshot_dir: "~/.local/state/hermes-guardian/snapshots"
+
