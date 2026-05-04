@@ -38,23 +38,29 @@ Events are appended as JSON lines to:
 
 ## Raspberry Pi Install
 
-On the Raspberry Pi 4:
+On Debian 13 / Raspberry Pi OS, prefer distro OpenCV packages. This avoids long pip
+builds and works well with the default OpenCV HOG detector.
 
 ```bash
 sudo apt update
-sudo apt install -y python3-venv python3-pip cmake build-essential \
-  libcamera-dev v4l-utils
+sudo apt install -y python3-venv python3-pip python3-yaml python3-numpy python3-opencv v4l-utils
 
 git clone <your-repo-url> hermes-guardian
 cd hermes-guardian
-python3 -m venv .venv
+python3 -m venv --system-site-packages .venv
 . .venv/bin/activate
-pip install --upgrade pip wheel setuptools
 pip install -e .
 ```
 
 The default install does not require `torch`, `ultralytics`, `dlib`, or
-`face-recognition`.
+`face-recognition`. It also does not install `opencv-python` from pip; it uses Debian's
+`python3-opencv` through the `--system-site-packages` virtualenv.
+
+If you are not on Debian/Raspberry Pi OS and want pip to install OpenCV, use:
+
+```bash
+pip install -e ".[opencv-pip]"
+```
 
 For local development, install test dependencies with `pip install -e ".[dev]"`.
 

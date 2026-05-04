@@ -23,6 +23,10 @@ guardian status --config ~/.config/hermes-guardian/config.yaml
 ## Setup Commands
 
 ```bash
+sudo apt install -y python3-venv python3-pip python3-yaml python3-numpy python3-opencv v4l-utils
+python3 -m venv --system-site-packages .venv
+. .venv/bin/activate
+pip install -e .
 guardian init-config --path ~/.config/hermes-guardian/config.yaml
 guardian test-camera --config ~/.config/hermes-guardian/config.yaml
 guardian watch --config ~/.config/hermes-guardian/config.yaml
@@ -47,6 +51,7 @@ Important fields:
 
 - Do not assume one missed ping means the user left; the tool uses a grace window.
 - Default person detection is OpenCV HOG, which avoids `torch`, `ultralytics`, `dlib`, and `face-recognition`.
+- On Debian/Raspberry Pi OS, use `python3-opencv` and a `--system-site-packages` venv instead of pip-building OpenCV.
 - Default identity is phone-presence based: person plus reachable phone means owner/home; person plus unreachable phone raises the alert flag.
 - YOLO26 is optional: install `.[yolo]`, set `detection.backend: "yolo"`, and use `yolo26n.pt` or an NCNN export.
 - If `guardian watch` is not running, use `guardian check-presence` for a one-shot phone update.
