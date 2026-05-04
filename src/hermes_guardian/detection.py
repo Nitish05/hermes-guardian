@@ -48,12 +48,45 @@ class Camera:
 
 class PersonDetector:
     def __init__(self, config: DetectionConfig):
-        from ultralytics import YOLO
-
         self.config = config
-        self.model = YOLO(config.model)
+        self.model = None
+        self.hog = None
+        if config.backend == "yolo":
+            from ultralytics import YOLO
+
+            self.model = YOLO(config.model)
+        elif config.backend == "hog":
+            self.hog = cv2.HOGDescriptor()
+            self.hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+        else:
+            raise ValueError(f"Unsupported detection backend: {config.backend}")
 
     def detect(self, frame: np.ndarray) -> list[PersonDetection]:
+        if self.config.backend == "hog":
+            return self._detect_hog(frame)
+        return self._detect_yolo(frame)
+
+    def _detect_hog(self, frame: np.ndarray) -> list[PersonDetection]:
+        if self.hog is None:
+            raise RuntimeError("HOG detector is not initialized.")
+        boxes, weights = self.hog.detectMultiScale(
+            frame,
+            hitThreshold=self.config.confidence,
+            winStride=(8, 8),
+            padding=(0, 0),
+            scale=self.config.hog_scale,
+            groupThreshold=self.config.hog_group_threshold,
+            useMeanshiftGrouping=False,
+        )
+        detections: list[PersonDetection] = []
+        for box, weight in zip(boxes, weights):
+            x, y, width, height = (int(value) for value in box)
+            detections.append(PersonDetection((x, y, x + width, y + height), float(weight)))
+        return detections
+
+    def _detect_yolo(self, frame: np.ndarray) -> list[PersonDetection]:
+        if self.model is None:
+            raise RuntimeError("YOLO detector is not initialized.")
         results = self.model.predict(
             source=frame,
             classes=[0],

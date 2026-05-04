@@ -14,13 +14,17 @@ camera:
   sample_fps: 1.0
 
 detection:
+  backend: "hog"
   model: "yolo26n.pt"
-  confidence: 0.45
+  confidence: 0.0
   image_size: 320
   consecutive_unknown_threshold: 2
   alert_cooldown_seconds: 60.0
+  hog_scale: 1.05
+  hog_group_threshold: 2.0
 
 face:
+  enabled: false
   tolerance: 0.6
   detection_model: "hog"
   upsample: 0

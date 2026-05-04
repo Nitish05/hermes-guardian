@@ -32,8 +32,7 @@ def update_presence_once(config: GuardianConfig, store: StateStore) -> GuardianS
 
 
 def watch(config: GuardianConfig, store: StateStore) -> None:
-    from .detection import Camera, PersonDetector, crop_detection
-    from .recognition import OwnerRecognizer
+    from .detection import Camera, PersonDetector
 
     config.validate()
     config.ensure_dirs()
@@ -53,7 +52,7 @@ def watch(config: GuardianConfig, store: StateStore) -> None:
         guardian_mode=loaded_state.guardian_mode,
     )
     detector: PersonDetector | None = None
-    recognizer: OwnerRecognizer | None = None
+    recognizer = None
     last_ping_at = 0.0
     last_alert_at = 0.0
     consecutive_unknown = 0
@@ -88,7 +87,6 @@ def watch(config: GuardianConfig, store: StateStore) -> None:
                 continue
 
             detector = detector or PersonDetector(config.detection)
-            recognizer = recognizer or OwnerRecognizer(config.face, config.paths.encodings_file)
             if camera is None:
                 camera = Camera(config.camera)
                 camera.__enter__()
@@ -104,18 +102,17 @@ def watch(config: GuardianConfig, store: StateStore) -> None:
             state.last_event = "person_detected"
             store.event("person_detected", count=len(detections), mode="guardian")
 
-            owner_seen = False
-            unknown_seen = False
-            best_distance = None
-            for detection in detections:
-                crop = crop_detection(frame, detection)
-                match = recognizer.match_frame(crop)
-                if match.matched:
-                    owner_seen = True
-                    best_distance = match.distance
-                    break
-                unknown_seen = True
-                best_distance = match.distance if match.distance is not None else best_distance
+            if config.face.enabled and recognizer is None:
+                from .recognition import OwnerRecognizer
+
+                recognizer = OwnerRecognizer(config.face, config.paths.encodings_file)
+            owner_seen, unknown_seen, best_distance = _classify_person_presence(
+                config=config,
+                state=state,
+                frame=frame,
+                detections=detections,
+                recognizer=recognizer,
+            )
 
             if owner_seen:
                 consecutive_unknown = 0
@@ -143,6 +140,38 @@ def watch(config: GuardianConfig, store: StateStore) -> None:
     finally:
         if camera is not None:
             camera.__exit__(None, None, None)
+
+
+def _classify_person_presence(
+    *,
+    config: GuardianConfig,
+    state: GuardianState,
+    frame,
+    detections,
+    recognizer,
+) -> tuple[bool, bool, float | None]:
+    if state.phone_reachable and not config.face.enabled:
+        return True, False, None
+    if not config.face.enabled:
+        return False, True, None
+
+    from .detection import crop_detection
+
+    if recognizer is None:
+        raise RuntimeError("Face recognizer is required when face.enabled is true.")
+    owner_seen = False
+    unknown_seen = False
+    best_distance = None
+    for detection in detections:
+        crop = crop_detection(frame, detection)
+        match = recognizer.match_frame(crop)
+        if match.matched:
+            owner_seen = True
+            best_distance = match.distance
+            break
+        unknown_seen = True
+        best_distance = match.distance if match.distance is not None else best_distance
+    return owner_seen, unknown_seen, best_distance
 
 
 def _apply_presence(

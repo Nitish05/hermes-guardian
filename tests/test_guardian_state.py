@@ -1,5 +1,5 @@
-from hermes_guardian.config import PhoneConfig
-from hermes_guardian.guardian import _apply_presence
+from hermes_guardian.config import GuardianConfig, PhoneConfig
+from hermes_guardian.guardian import _apply_presence, _classify_person_presence
 from hermes_guardian.presence import PresenceTracker
 from hermes_guardian.state import GuardianState
 
@@ -27,3 +27,34 @@ def test_apply_presence_enters_guardian_after_threshold():
     assert state.guardian_mode is True
     assert state.last_event == "entered_guardian"
 
+
+def test_phone_reachable_classifies_person_as_owner_without_face():
+    state = GuardianState(phone_reachable=True)
+
+    owner_seen, unknown_seen, distance = _classify_person_presence(
+        config=GuardianConfig(),
+        state=state,
+        frame=None,
+        detections=[object()],
+        recognizer=None,
+    )
+
+    assert owner_seen is True
+    assert unknown_seen is False
+    assert distance is None
+
+
+def test_phone_unreachable_classifies_person_as_unknown_without_face():
+    state = GuardianState(phone_reachable=False)
+
+    owner_seen, unknown_seen, distance = _classify_person_presence(
+        config=GuardianConfig(),
+        state=state,
+        frame=None,
+        detections=[object()],
+        recognizer=None,
+    )
+
+    assert owner_seen is False
+    assert unknown_seen is True
+    assert distance is None

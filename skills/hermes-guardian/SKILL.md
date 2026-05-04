@@ -1,6 +1,6 @@
 ---
 name: hermes-guardian
-description: Use this skill when working with the hermes-guardian Raspberry Pi room guardian tool, including installing it from Git, configuring phone-based home/away detection, enrolling owner face photos, running the guardian CLI, or interpreting its local JSON state and event log for Hermes-style agents.
+description: Use this skill when working with the hermes-guardian Raspberry Pi room guardian tool, including installing it from Git, configuring phone-based home/away detection, running OpenCV person detection, optional face enrollment, running the guardian CLI, or interpreting its local JSON state and event log for Hermes-style agents.
 ---
 
 # Hermes Guardian
@@ -25,7 +25,6 @@ guardian status --config ~/.config/hermes-guardian/config.yaml
 ```bash
 guardian init-config --path ~/.config/hermes-guardian/config.yaml
 guardian test-camera --config ~/.config/hermes-guardian/config.yaml
-guardian enroll-guided --config ~/.config/hermes-guardian/config.yaml
 guardian watch --config ~/.config/hermes-guardian/config.yaml
 guardian clear-alert --config ~/.config/hermes-guardian/config.yaml
 ```
@@ -47,10 +46,10 @@ Important fields:
 ## Guidance
 
 - Do not assume one missed ping means the user left; the tool uses a grace window.
-- Default person detection is `yolo26n.pt` at `image_size: 320` and `sample_fps: 1.0` for Raspberry Pi 4 comfort.
-- If detection is too slow, export YOLO26 nano with `yolo export model=yolo26n.pt format=ncnn` and set `detection.model` to `yolo26n_ncnn_model`.
+- Default person detection is OpenCV HOG, which avoids `torch`, `ultralytics`, `dlib`, and `face-recognition`.
+- Default identity is phone-presence based: person plus reachable phone means owner/home; person plus unreachable phone raises the alert flag.
+- YOLO26 is optional: install `.[yolo]`, set `detection.backend: "yolo"`, and use `yolo26n.pt` or an NCNN export.
 - If `guardian watch` is not running, use `guardian check-presence` for a one-shot phone update.
 - Use `guardian clear-alert` to acknowledge an alert; do not manually edit the JSON state.
-- Prefer `guardian enroll-guided` for initial setup. Use `--no-preview` over SSH without a display.
-- If face matching is unreliable, rerun guided enrollment with more samples from the webcam angle and lighting.
+- Face matching is optional: install `.[face]`, set `face.enabled: true`, then run `guardian enroll-guided`.
 - If camera commands fail, check `v4l2-ctl --list-devices`, camera index, and Linux camera permissions.

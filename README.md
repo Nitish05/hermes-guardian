@@ -3,8 +3,7 @@
 `hermes-guardian` is a Raspberry Pi friendly room guardian for Hermes-style local agents.
 It watches your phone's LAN reachability to decide whether you are home, and only runs
 continuous webcam person detection when you are away. If a person appears while you are
-away, it compares visible faces against enrolled owner photos and raises a local JSON flag
-when the person is unknown.
+away and your phone is not reachable, it raises a local JSON flag.
 
 This is not a security-grade alarm system. Wi-Fi sleep, poor lighting, face angle, masks,
 camera placement, and spoofing can all affect the result.
@@ -44,7 +43,6 @@ On the Raspberry Pi 4:
 ```bash
 sudo apt update
 sudo apt install -y python3-venv python3-pip cmake build-essential \
-  libopenblas-dev liblapack-dev libjpeg-dev libatlas-base-dev \
   libcamera-dev v4l-utils
 
 git clone <your-repo-url> hermes-guardian
@@ -52,28 +50,53 @@ cd hermes-guardian
 python3 -m venv .venv
 . .venv/bin/activate
 pip install --upgrade pip wheel setuptools
-pip install -e ".[dev]"
+pip install -e .
 ```
 
-If `face-recognition`/`dlib` is slow to install on the Pi, install a prebuilt wheel that
-matches your OS/Python version or build it once and reuse the wheel.
+The default install does not require `torch`, `ultralytics`, `dlib`, or
+`face-recognition`.
+
+For local development, install test dependencies with `pip install -e ".[dev]"`.
 
 ## Person Detection Model
 
-The default detector is Ultralytics YOLO26 nano:
+The default detector is OpenCV's built-in pretrained HOG people detector:
 
 ```yaml
 detection:
-  model: "yolo26n.pt"
-  image_size: 320
+  backend: "hog"
+  confidence: 0.0
 
 camera:
   sample_fps: 1.0
 ```
 
-These defaults prioritize comfortable Raspberry Pi 4 CPU operation over maximum FPS.
-Guardian mode only needs to notice that a person entered the room, not process every
-camera frame.
+This path is intentionally lightweight for Raspberry Pi 4. It uses only OpenCV and avoids
+the long `torch` and `dlib` installs. Guardian mode only needs to notice that a person
+entered the room, not process every camera frame.
+
+The default identity rule is phone-presence based:
+
+- person detected and phone reachable: treat as owner/home
+- person detected and phone unreachable: raise `alert_active`
+
+### Optional YOLO26 Upgrade
+
+If you want better person detection and can tolerate the heavier install, install:
+
+```bash
+pip install -e ".[yolo]"
+```
+
+Then set:
+
+```yaml
+detection:
+  backend: "yolo"
+  model: "yolo26n.pt"
+  confidence: 0.45
+  image_size: 320
+```
 
 For better ARM performance, export YOLO26 nano to NCNN on the Pi:
 
@@ -113,11 +136,25 @@ v4l2-ctl --list-devices
 guardian test-camera --config ~/.config/hermes-guardian/config.yaml
 ```
 
-## Enroll Your Face
+## Optional Face Enrollment
 
-For first-time setup, use guided webcam enrollment. It behaves like a simple Face ID
-setup: the preview shows prompts, validates that exactly one face is visible, and
-automatically captures several samples from different angles.
+Face enrollment is no longer required for the default setup. Install it only if you want
+biometric matching in addition to phone presence:
+
+```bash
+pip install -e ".[face]"
+```
+
+Then enable it:
+
+```yaml
+face:
+  enabled: true
+```
+
+Guided webcam enrollment behaves like a simple Face ID setup: the preview shows prompts,
+validates that exactly one face is visible, and automatically captures several samples
+from different angles.
 
 ```bash
 guardian enroll-guided --config ~/.config/hermes-guardian/config.yaml

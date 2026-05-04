@@ -32,15 +32,19 @@ class CameraConfig:
 
 @dataclass(slots=True)
 class DetectionConfig:
+    backend: str = "hog"
     model: str = "yolo26n.pt"
-    confidence: float = 0.45
+    confidence: float = 0.0
     image_size: int = 320
     consecutive_unknown_threshold: int = 2
     alert_cooldown_seconds: float = 60.0
+    hog_scale: float = 1.05
+    hog_group_threshold: float = 2.0
 
 
 @dataclass(slots=True)
 class FaceConfig:
+    enabled: bool = False
     tolerance: float = 0.6
     detection_model: str = "hog"
     upsample: int = 0
@@ -111,8 +115,12 @@ class GuardianConfig:
             raise ValueError("phone.return_ping_threshold must be at least 1.")
         if self.camera.sample_fps <= 0:
             raise ValueError("camera.sample_fps must be greater than 0.")
-        if not 0 < self.detection.confidence <= 1:
-            raise ValueError("detection.confidence must be between 0 and 1.")
+        if self.detection.backend not in {"hog", "yolo"}:
+            raise ValueError("detection.backend must be 'hog' or 'yolo'.")
+        if self.detection.backend == "yolo" and not 0 < self.detection.confidence <= 1:
+            raise ValueError("YOLO detection.confidence must be between 0 and 1.")
+        if self.detection.backend == "hog" and self.detection.confidence < 0:
+            raise ValueError("HOG detection.confidence must be zero or greater.")
         if not 0 < self.face.tolerance < 1:
             raise ValueError("face.tolerance must be between 0 and 1.")
 
