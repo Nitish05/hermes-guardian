@@ -11,12 +11,12 @@ camera:
   source: 0
   frame_width: 640
   frame_height: 480
-  sample_fps: 2.0
+  sample_fps: 1.0
 
 detection:
-  model: "yolo11n.pt"
+  model: "yolo26n.pt"
   confidence: 0.45
-  image_size: 416
+  image_size: 320
   consecutive_unknown_threshold: 2
   alert_cooldown_seconds: 60.0
 
@@ -30,4 +30,3 @@ paths:
   event_log: "~/.local/state/hermes-guardian/events.jsonl"
   data_dir: "~/.local/share/hermes-guardian"
   snapshot_dir: "~/.local/state/hermes-guardian/snapshots"
-

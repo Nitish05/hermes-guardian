@@ -27,14 +27,14 @@ class CameraConfig:
     source: int | str = 0
     frame_width: int = 640
     frame_height: int = 480
-    sample_fps: float = 2.0
+    sample_fps: float = 1.0
 
 
 @dataclass(slots=True)
 class DetectionConfig:
-    model: str = "yolo11n.pt"
+    model: str = "yolo26n.pt"
     confidence: float = 0.45
-    image_size: int = 416
+    image_size: int = 320
     consecutive_unknown_threshold: int = 2
     alert_cooldown_seconds: float = 60.0
 

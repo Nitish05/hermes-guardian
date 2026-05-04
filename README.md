@@ -58,6 +58,39 @@ pip install -e ".[dev]"
 If `face-recognition`/`dlib` is slow to install on the Pi, install a prebuilt wheel that
 matches your OS/Python version or build it once and reuse the wheel.
 
+## Person Detection Model
+
+The default detector is Ultralytics YOLO26 nano:
+
+```yaml
+detection:
+  model: "yolo26n.pt"
+  image_size: 320
+
+camera:
+  sample_fps: 1.0
+```
+
+These defaults prioritize comfortable Raspberry Pi 4 CPU operation over maximum FPS.
+Guardian mode only needs to notice that a person entered the room, not process every
+camera frame.
+
+For better ARM performance, export YOLO26 nano to NCNN on the Pi:
+
+```bash
+yolo export model=yolo26n.pt format=ncnn
+```
+
+Then update the config:
+
+```yaml
+detection:
+  model: "yolo26n_ncnn_model"
+```
+
+Keep `yolo26n.pt` for the simplest first setup. Avoid larger YOLO26 variants on a Pi 4
+unless you have tested that the lower FPS is acceptable.
+
 ## Configure
 
 Create a config:

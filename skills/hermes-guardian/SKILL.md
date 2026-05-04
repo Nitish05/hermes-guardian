@@ -47,6 +47,8 @@ Important fields:
 ## Guidance
 
 - Do not assume one missed ping means the user left; the tool uses a grace window.
+- Default person detection is `yolo26n.pt` at `image_size: 320` and `sample_fps: 1.0` for Raspberry Pi 4 comfort.
+- If detection is too slow, export YOLO26 nano with `yolo export model=yolo26n.pt format=ncnn` and set `detection.model` to `yolo26n_ncnn_model`.
 - If `guardian watch` is not running, use `guardian check-presence` for a one-shot phone update.
 - Use `guardian clear-alert` to acknowledge an alert; do not manually edit the JSON state.
 - Prefer `guardian enroll-guided` for initial setup. Use `--no-preview` over SSH without a display.
