@@ -58,7 +58,7 @@ Important fields:
 - Default person detection is OpenCV HOG, which avoids `torch`, `ultralytics`, `dlib`, and `face-recognition`.
 - On Debian/Raspberry Pi OS, use `python3-opencv` and a `--system-site-packages` venv instead of pip-building OpenCV.
 - Default identity is phone-presence based: person plus reachable phone means owner/home; person plus unreachable phone raises the alert flag.
-- YOLO26 is optional: install `.[yolo]`, set `detection.backend: "yolo"`, and use `yolo26n.pt` or an NCNN export.
+- YOLO26 is optional: install `.[yolo]`, set `detection.backend: "yolo"`, and use `yolo26n.pt` or an NCNN export. The code filters YOLO to COCO `person` with `classes=[0]`.
 - If `guardian watch` is not running, use `guardian check-presence` for a one-shot phone update.
 - Use `guardian clear-alert` to acknowledge an alert; do not manually edit the JSON state.
 - Face matching is optional: install `.[face]`, set `face.enabled: true`, then run `guardian enroll-guided`.

@@ -86,15 +86,18 @@ The default identity rule is phone-presence based:
 - person detected and phone reachable: treat as owner/home
 - person detected and phone unreachable: raise `alert_active`
 
-### Optional YOLO26 Upgrade
+### YOLO26 COCO Person-Only Detection
 
-If you want better person detection and can tolerate the heavier install, install:
+The tool can use the pretrained Ultralytics YOLO26 nano COCO model instead of HOG.
+The runtime filters YOLO output with `classes=[0]`, so it only detects COCO `person`.
+
+Install:
 
 ```bash
 pip install -e ".[yolo]"
 ```
 
-Then set:
+Then set your config:
 
 ```yaml
 detection:
@@ -103,6 +106,8 @@ detection:
   confidence: 0.45
   image_size: 320
 ```
+
+There is also a full example at `config.yolo26.example.yaml`.
 
 For better ARM performance, export YOLO26 nano to NCNN on the Pi:
 
@@ -114,11 +119,12 @@ Then update the config:
 
 ```yaml
 detection:
+  backend: "yolo"
   model: "yolo26n_ncnn_model"
 ```
 
-Keep `yolo26n.pt` for the simplest first setup. Avoid larger YOLO26 variants on a Pi 4
-unless you have tested that the lower FPS is acceptable.
+Keep `yolo26n.pt` for the simplest first YOLO setup. Avoid larger YOLO26 variants on a
+Pi 4 unless you have tested that the lower FPS is acceptable.
 
 ## Configure
 

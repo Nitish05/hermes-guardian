@@ -52,7 +52,12 @@ class PersonDetector:
         self.model = None
         self.hog = None
         if config.backend == "yolo":
-            from ultralytics import YOLO
+            try:
+                from ultralytics import YOLO
+            except ImportError as exc:
+                raise RuntimeError(
+                    "YOLO backend requires Ultralytics. Install it with `pip install -e \".[yolo]\"`."
+                ) from exc
 
             self.model = YOLO(config.model)
         elif config.backend == "hog":
