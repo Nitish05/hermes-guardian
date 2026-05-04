@@ -56,7 +56,7 @@ class PersonDetector:
                 from ultralytics import YOLO
             except ImportError as exc:
                 raise RuntimeError(
-                    "YOLO backend requires Ultralytics. Install it with `pip install -e \".[yolo]\"`."
+                    "YOLO backend requires Ultralytics. Install it with `pip install -e .`."
                 ) from exc
 
             self.model = YOLO(config.model)

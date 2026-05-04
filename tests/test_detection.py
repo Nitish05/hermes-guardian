@@ -16,5 +16,5 @@ def test_yolo_backend_explains_missing_ultralytics(monkeypatch):
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
 
-    with pytest.raises(RuntimeError, match=r"\.\[yolo\]"):
+    with pytest.raises(RuntimeError, match=r"pip install -e \."):
         PersonDetector(DetectionConfig(backend="yolo", confidence=0.45))

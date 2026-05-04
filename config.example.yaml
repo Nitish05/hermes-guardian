@@ -22,9 +22,9 @@ camera:
   sample_fps: 1.0
 
 detection:
-  backend: "hog"
+  backend: "yolo"
   model: "yolo26n.pt"
-  confidence: 0.0
+  confidence: 0.45
   image_size: 320
   consecutive_unknown_threshold: 2
   alert_cooldown_seconds: 60.0

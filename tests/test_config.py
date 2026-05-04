@@ -10,8 +10,9 @@ def test_config_defaults_can_be_serialized():
     data = config.to_dict()
     assert data["camera"]["source"] == 0
     assert data["camera"]["sample_fps"] == 1.0
-    assert data["detection"]["backend"] == "hog"
+    assert data["detection"]["backend"] == "yolo"
     assert data["detection"]["model"] == "yolo26n.pt"
+    assert data["detection"]["confidence"] == 0.45
     assert data["face"]["enabled"] is False
     assert "state_file" in data["paths"]
 

@@ -38,8 +38,8 @@ Events are appended as JSON lines to:
 
 ## Raspberry Pi Install
 
-On Debian 13 / Raspberry Pi OS, prefer distro OpenCV packages. This avoids long pip
-builds and works well with the default OpenCV HOG detector.
+On Debian 13 / Raspberry Pi OS, prefer distro OpenCV packages. This avoids pip-building
+OpenCV while Ultralytics installs the YOLO runtime.
 
 ```bash
 sudo apt update
@@ -52,9 +52,10 @@ python3 -m venv --system-site-packages .venv
 pip install -e .
 ```
 
-The default install does not require `torch`, `ultralytics`, `dlib`, or
-`face-recognition`. It also does not install `opencv-python` from pip; it uses Debian's
-`python3-opencv` through the `--system-site-packages` virtualenv.
+The default install uses Ultralytics YOLO26n for person detection. It does not require
+`dlib` or `face-recognition`. The project relies on Debian's `python3-opencv` through the
+`--system-site-packages` virtualenv; Ultralytics may still install its own transitive
+Python dependencies.
 
 If you are not on Debian/Raspberry Pi OS and want pip to install OpenCV, use:
 
@@ -66,38 +67,8 @@ For local development, install test dependencies with `pip install -e ".[dev]"`.
 
 ## Person Detection Model
 
-The default detector is OpenCV's built-in pretrained HOG people detector:
-
-```yaml
-detection:
-  backend: "hog"
-  confidence: 0.0
-
-camera:
-  sample_fps: 1.0
-```
-
-This path is intentionally lightweight for Raspberry Pi 4. It uses only OpenCV and avoids
-the long `torch` and `dlib` installs. Guardian mode only needs to notice that a person
-entered the room, not process every camera frame.
-
-The default identity rule is phone-presence based:
-
-- person detected and phone reachable: treat as owner/home
-- person detected and phone unreachable: raise `alert_active`
-
-### YOLO26 COCO Person-Only Detection
-
-The tool can use the pretrained Ultralytics YOLO26 nano COCO model instead of HOG.
-The runtime filters YOLO output with `classes=[0]`, so it only detects COCO `person`.
-
-Install:
-
-```bash
-pip install -e ".[yolo]"
-```
-
-Then set your config:
+The default detector is the pretrained Ultralytics YOLO26 nano COCO model. The runtime
+filters YOLO output with `classes=[0]`, so it only detects COCO `person`.
 
 ```yaml
 detection:
@@ -105,9 +76,18 @@ detection:
   model: "yolo26n.pt"
   confidence: 0.45
   image_size: 320
+
+camera:
+  sample_fps: 1.0
 ```
 
-There is also a full example at `config.yolo26.example.yaml`.
+Guardian mode only needs to notice that a person entered the room, not process every
+camera frame. Keep `sample_fps` low on a Raspberry Pi 4.
+
+The default identity rule is phone-presence based:
+
+- person detected and phone reachable: treat as owner/home
+- person detected and phone unreachable: raise `alert_active`
 
 For better ARM performance, export YOLO26 nano to NCNN on the Pi:
 
@@ -123,8 +103,18 @@ detection:
   model: "yolo26n_ncnn_model"
 ```
 
-Keep `yolo26n.pt` for the simplest first YOLO setup. Avoid larger YOLO26 variants on a
-Pi 4 unless you have tested that the lower FPS is acceptable.
+Keep `yolo26n.pt` for the simplest first setup. Avoid larger YOLO26 variants on a Pi 4
+unless you have tested that the lower FPS is acceptable.
+
+### HOG Fallback
+
+If YOLO is too heavy for your Pi, fall back to OpenCV's built-in HOG people detector:
+
+```yaml
+detection:
+  backend: "hog"
+  confidence: 0.0
+```
 
 ## Configure
 

@@ -42,9 +42,9 @@ class CameraConfig:
 
 @dataclass(slots=True)
 class DetectionConfig:
-    backend: str = "hog"
+    backend: str = "yolo"
     model: str = "yolo26n.pt"
-    confidence: float = 0.0
+    confidence: float = 0.45
     image_size: int = 320
     consecutive_unknown_threshold: int = 2
     alert_cooldown_seconds: float = 60.0
