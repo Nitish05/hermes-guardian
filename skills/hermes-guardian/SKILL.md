@@ -25,7 +25,7 @@ guardian status --config ~/.config/hermes-guardian/config.yaml
 ```bash
 guardian init-config --path ~/.config/hermes-guardian/config.yaml
 guardian test-camera --config ~/.config/hermes-guardian/config.yaml
-guardian enroll --config ~/.config/hermes-guardian/config.yaml --image owner1.jpg --image owner2.jpg
+guardian enroll-guided --config ~/.config/hermes-guardian/config.yaml
 guardian watch --config ~/.config/hermes-guardian/config.yaml
 guardian clear-alert --config ~/.config/hermes-guardian/config.yaml
 ```
@@ -49,5 +49,6 @@ Important fields:
 - Do not assume one missed ping means the user left; the tool uses a grace window.
 - If `guardian watch` is not running, use `guardian check-presence` for a one-shot phone update.
 - Use `guardian clear-alert` to acknowledge an alert; do not manually edit the JSON state.
-- If face matching is unreliable, ask for better enrollment photos from the webcam angle and lighting.
+- Prefer `guardian enroll-guided` for initial setup. Use `--no-preview` over SSH without a display.
+- If face matching is unreliable, rerun guided enrollment with more samples from the webcam angle and lighting.
 - If camera commands fail, check `v4l2-ctl --list-devices`, camera index, and Linux camera permissions.

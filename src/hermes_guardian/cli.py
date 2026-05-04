@@ -46,6 +46,30 @@ def _parser() -> argparse.ArgumentParser:
     enroll.add_argument("--image", action="append", required=True, help="Owner image path. Repeatable.")
     enroll.set_defaults(func=_enroll)
 
+    enroll_guided = subparsers.add_parser(
+        "enroll-guided",
+        parents=[common],
+        help="Guide automatic owner enrollment from the webcam.",
+    )
+    enroll_guided.add_argument("--samples", type=int, default=5, help="Number of face samples to capture.")
+    enroll_guided.add_argument(
+        "--interval",
+        type=float,
+        default=1.2,
+        help="Minimum seconds between automatic captures.",
+    )
+    enroll_guided.add_argument(
+        "--append",
+        action="store_true",
+        help="Append to existing owner encodings instead of replacing them.",
+    )
+    enroll_guided.add_argument(
+        "--no-preview",
+        action="store_true",
+        help="Run without an OpenCV preview window for SSH/headless sessions.",
+    )
+    enroll_guided.set_defaults(func=_enroll_guided)
+
     test_camera = subparsers.add_parser(
         "test-camera", parents=[common], help="Open camera and write one test frame."
     )
@@ -62,9 +86,9 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _load(args) -> tuple[GuardianConfig, StateStore]:
+def _load(args, *, require_phone: bool = True) -> tuple[GuardianConfig, StateStore]:
     config = GuardianConfig.load(args.config)
-    config.validate()
+    config.validate(require_phone=require_phone)
     config.ensure_dirs()
     return config, StateStore(config.paths.state_file, config.paths.event_log)
 
@@ -106,7 +130,7 @@ def _clear_alert(args) -> int:
 def _enroll(args) -> int:
     from .recognition import OwnerRecognizer
 
-    config, _store = _load(args)
+    config, _store = _load(args, require_phone=False)
     images = [Path(image).expanduser() for image in args.image]
     missing = [str(image) for image in images if not image.exists()]
     if missing:
@@ -117,12 +141,33 @@ def _enroll(args) -> int:
     return 0
 
 
+def _enroll_guided(args) -> int:
+    from .recognition import OwnerRecognizer
+
+    config, _store = _load(args, require_phone=False)
+    recognizer = OwnerRecognizer(config.face, config.paths.encodings_file)
+    print("Guided enrollment will automatically capture valid single-face samples.")
+    print("Follow the prompts. Press q or Esc in the preview window to cancel.")
+    result = recognizer.guided_enroll(
+        camera_source=config.camera.source,
+        frame_width=config.camera.frame_width,
+        frame_height=config.camera.frame_height,
+        samples=args.samples,
+        capture_interval_seconds=args.interval,
+        append=args.append,
+        preview=not args.no_preview,
+    )
+    mode = "appended" if result.appended else "saved"
+    print(f"{mode} {result.samples} guided face sample(s) at {result.output_file}")
+    return 0
+
+
 def _test_camera(args) -> int:
     import cv2
 
     from .detection import Camera
 
-    config, _store = _load(args)
+    config, _store = _load(args, require_phone=False)
     with Camera(config.camera) as camera:
         frame = camera.read()
     output = Path(args.output).expanduser() if args.output else config.paths.snapshot_dir / "camera-test.jpg"
@@ -136,7 +181,7 @@ def _test_camera(args) -> int:
 def _test_detect(args) -> int:
     from .detection import Camera, PersonDetector
 
-    config, _store = _load(args)
+    config, _store = _load(args, require_phone=False)
     with Camera(config.camera) as camera:
         frame = camera.read()
     detector = PersonDetector(config.detection)

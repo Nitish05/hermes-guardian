@@ -102,8 +102,8 @@ class GuardianConfig:
             paths=_path_config_from_mapping(data.get("paths", {})),
         )
 
-    def validate(self) -> None:
-        if not self.phone.ip:
+    def validate(self, *, require_phone: bool = True) -> None:
+        if require_phone and not self.phone.ip:
             raise ValueError("phone.ip must be set in the config.")
         if self.phone.missed_ping_threshold < 1:
             raise ValueError("phone.missed_ping_threshold must be at least 1.")

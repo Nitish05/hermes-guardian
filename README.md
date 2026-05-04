@@ -82,7 +82,24 @@ guardian test-camera --config ~/.config/hermes-guardian/config.yaml
 
 ## Enroll Your Face
 
-Use two or more clear owner photos from the camera's likely angle and lighting:
+For first-time setup, use guided webcam enrollment. It behaves like a simple Face ID
+setup: the preview shows prompts, validates that exactly one face is visible, and
+automatically captures several samples from different angles.
+
+```bash
+guardian enroll-guided --config ~/.config/hermes-guardian/config.yaml
+```
+
+Use `--samples` to change the number of captures, and `--no-preview` when running over
+SSH without a display:
+
+```bash
+guardian enroll-guided --config ~/.config/hermes-guardian/config.yaml --samples 7
+guardian enroll-guided --config ~/.config/hermes-guardian/config.yaml --no-preview
+```
+
+If you already have clear owner photos from the camera's likely angle and lighting, you can
+still enroll from files:
 
 ```bash
 guardian enroll --config ~/.config/hermes-guardian/config.yaml --image owner1.jpg --image owner2.jpg
