@@ -30,6 +30,14 @@ class PresenceConfig:
     router_command: str = ""
     router_command_weight: float = 2.0
     router_command_timeout_seconds: float = 5.0
+    ble_enabled: bool = False
+    ble_weight: float = 2.0
+    ble_scan_seconds: float = 6.0
+    ble_company_id: int = 0x004C
+    ble_uuid: str = "01122334-4556-6778-899a-abbccddeeff0"
+    ble_major: int = 1
+    ble_minor: int = 1
+    ble_min_rssi: int | None = None
 
 
 @dataclass(slots=True)
@@ -127,7 +135,12 @@ class GuardianConfig:
         )
 
     def validate(self, *, require_phone: bool = True) -> None:
-        if require_phone and not self.presence.ping_enabled and not self.presence.router_command:
+        if (
+            require_phone
+            and not self.presence.ping_enabled
+            and not self.presence.router_command
+            and not self.presence.ble_enabled
+        ):
             raise ValueError("At least one presence signal must be enabled.")
         if require_phone and self.presence.ping_enabled and not self.phone.ip:
             raise ValueError("phone.ip must be set when presence.ping_enabled is true.")
@@ -143,6 +156,16 @@ class GuardianConfig:
             raise ValueError("presence.router_command_weight must be zero or greater.")
         if self.presence.router_command_timeout_seconds <= 0:
             raise ValueError("presence.router_command_timeout_seconds must be greater than 0.")
+        if self.presence.ble_weight < 0:
+            raise ValueError("presence.ble_weight must be zero or greater.")
+        if self.presence.ble_scan_seconds <= 0:
+            raise ValueError("presence.ble_scan_seconds must be greater than 0.")
+        if not 0 <= self.presence.ble_company_id <= 0xFFFF:
+            raise ValueError("presence.ble_company_id must be a 16-bit company identifier.")
+        if not 0 <= self.presence.ble_major <= 0xFFFF:
+            raise ValueError("presence.ble_major must be a 16-bit value.")
+        if not 0 <= self.presence.ble_minor <= 0xFFFF:
+            raise ValueError("presence.ble_minor must be a 16-bit value.")
         if self.camera.sample_fps <= 0:
             raise ValueError("camera.sample_fps must be greater than 0.")
         if self.detection.backend not in {"hog", "yolo"}:

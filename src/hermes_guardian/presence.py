@@ -3,7 +3,9 @@ from __future__ import annotations
 import platform
 import shlex
 import subprocess
+import asyncio
 from dataclasses import dataclass
+from typing import Optional
 
 from .config import PhoneConfig, PresenceConfig
 
@@ -90,6 +92,8 @@ def evaluate_presence(phone: PhoneConfig, presence: PresenceConfig) -> PresenceR
     signals: list[PresenceSignal] = []
     if presence.router_command:
         signals.append(_check_router_command(presence))
+    if presence.ble_enabled:
+        signals.append(check_ble_beacon(presence))
     if presence.ping_enabled:
         ping_home = ping_host(
             phone.ip,
@@ -105,6 +109,89 @@ def evaluate_presence(phone: PhoneConfig, presence: PresenceConfig) -> PresenceR
         threshold=presence.home_score_threshold,
         signals=tuple(signals),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class IBeaconAdvertisement:
+    uuid: str
+    major: int
+    minor: int
+    tx_power: int
+    rssi: int
+    address: str
+
+
+def parse_ibeacon_payload(payload: bytes, *, rssi: int = 0, address: str = "") -> IBeaconAdvertisement | None:
+    if len(payload) < 23 or payload[0:2] != b"\x02\x15":
+        return None
+
+    uuid_hex = payload[2:18].hex()
+    uuid = (
+        f"{uuid_hex[0:8]}-{uuid_hex[8:12]}-{uuid_hex[12:16]}-"
+        f"{uuid_hex[16:20]}-{uuid_hex[20:32]}"
+    )
+    return IBeaconAdvertisement(
+        uuid=uuid.lower(),
+        major=int.from_bytes(payload[18:20], byteorder="big"),
+        minor=int.from_bytes(payload[20:22], byteorder="big"),
+        tx_power=int.from_bytes(payload[22:23], byteorder="big", signed=True),
+        rssi=rssi,
+        address=address,
+    )
+
+
+def check_ble_beacon(config: PresenceConfig) -> PresenceSignal:
+    try:
+        beacon = asyncio.run(_scan_ble_beacon(config))
+    except Exception as exc:
+        return PresenceSignal("ble_beacon", False, config.ble_weight, f"error={exc}")
+
+    if beacon is None:
+        return PresenceSignal("ble_beacon", False, config.ble_weight, "not_seen")
+
+    return PresenceSignal(
+        "ble_beacon",
+        True,
+        config.ble_weight,
+        f"address={beacon.address} rssi={beacon.rssi} tx_power={beacon.tx_power}",
+    )
+
+
+async def _scan_ble_beacon(config: PresenceConfig) -> Optional[IBeaconAdvertisement]:
+    from bleak import BleakScanner
+
+    target_uuid = config.ble_uuid.lower()
+    found: IBeaconAdvertisement | None = None
+
+    def on_advertisement(device, advertisement_data) -> None:
+        nonlocal found
+        payload = advertisement_data.manufacturer_data.get(config.ble_company_id)
+        if payload is None:
+            return
+
+        beacon = parse_ibeacon_payload(
+            payload,
+            rssi=advertisement_data.rssi,
+            address=device.address,
+        )
+        if beacon is None:
+            return
+        if beacon.uuid != target_uuid:
+            return
+        if beacon.major != config.ble_major or beacon.minor != config.ble_minor:
+            return
+        if config.ble_min_rssi is not None and beacon.rssi < config.ble_min_rssi:
+            return
+
+        found = beacon
+
+    scanner = BleakScanner(on_advertisement)
+    async with scanner:
+        deadline = asyncio.get_running_loop().time() + config.ble_scan_seconds
+        while found is None and asyncio.get_running_loop().time() < deadline:
+            await asyncio.sleep(0.1)
+
+    return found
 
 
 def check_phone(config: PhoneConfig, presence: PresenceConfig | None = None) -> bool:

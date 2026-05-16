@@ -1,7 +1,7 @@
 import sys
 
 from hermes_guardian.config import PhoneConfig, PresenceConfig
-from hermes_guardian.presence import PresenceTracker, evaluate_presence
+from hermes_guardian.presence import PresenceTracker, evaluate_presence, parse_ibeacon_payload
 
 
 def test_presence_requires_missed_ping_grace_window():
@@ -54,3 +54,26 @@ def test_failed_router_command_does_not_meet_score():
 
     assert presence.home is False
     assert presence.score == 0.0
+
+
+def test_parse_ibeacon_payload_matches_xiao_beacon():
+    payload = bytes.fromhex(
+        "0215"
+        "0112233445566778899aabbccddeeff0"
+        "0001"
+        "0001"
+        "ca"
+    )
+
+    beacon = parse_ibeacon_payload(payload, rssi=-72, address="AA:BB:CC:DD:EE:FF")
+
+    assert beacon is not None
+    assert beacon.uuid == "01122334-4556-6778-899a-abbccddeeff0"
+    assert beacon.major == 1
+    assert beacon.minor == 1
+    assert beacon.tx_power == -54
+    assert beacon.rssi == -72
+
+
+def test_parse_ibeacon_payload_rejects_non_ibeacon_payload():
+    assert parse_ibeacon_payload(b"\x01\x02not-an-ibeacon") is None

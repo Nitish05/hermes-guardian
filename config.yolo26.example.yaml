@@ -11,9 +11,17 @@ presence:
   home_score_threshold: 2.0
   ping_enabled: false
   ping_weight: 0.5
-  router_command: "/usr/local/bin/is-iphone-associated"
+  router_command: ""
   router_command_weight: 2.0
   router_command_timeout_seconds: 5.0
+  ble_enabled: true
+  ble_weight: 2.0
+  ble_scan_seconds: 6.0
+  ble_company_id: 76
+  ble_uuid: "01122334-4556-6778-899a-abbccddeeff0"
+  ble_major: 1
+  ble_minor: 1
+  ble_min_rssi:
 
 camera:
   source: 0

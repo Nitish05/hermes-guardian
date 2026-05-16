@@ -1,9 +1,10 @@
 # hermes-guardian
 
 `hermes-guardian` is a Raspberry Pi friendly room guardian for Hermes-style local agents.
-It watches your phone's LAN reachability to decide whether you are home, and only runs
-continuous webcam person detection when you are away. If a person appears while you are
-away and your phone is not reachable, it raises a local JSON flag.
+It watches presence signals such as a BLE iBeacon, phone LAN reachability, or a router
+association command to decide whether you are home. It only runs continuous webcam person
+detection when you are away. If a person appears while you are away, it raises a local
+JSON flag.
 
 This is not a security-grade alarm system. Wi-Fi sleep, poor lighting, face angle, masks,
 camera placement, and spoofing can all affect the result.
@@ -39,11 +40,12 @@ Events are appended as JSON lines to:
 ## Raspberry Pi Install
 
 On Debian 13 / Raspberry Pi OS, prefer distro OpenCV packages. This avoids pip-building
-OpenCV while Ultralytics installs the YOLO runtime.
+OpenCV while Ultralytics installs the YOLO runtime. BLE scanning uses BlueZ through
+`bleak`.
 
 ```bash
 sudo apt update
-sudo apt install -y python3-venv python3-pip python3-yaml python3-numpy python3-opencv v4l-utils
+sudo apt install -y bluetooth bluez python3-venv python3-pip python3-yaml python3-numpy python3-opencv v4l-utils
 
 git clone <your-repo-url> hermes-guardian
 cd hermes-guardian
@@ -130,6 +132,39 @@ Edit the phone IP. Reserve this IP in your router so it does not change:
 phone:
   ip: "192.168.1.50"
 ```
+
+### XIAO BLE Beacon Presence
+
+For a XIAO nRF52840 iBeacon, disable phone ping and enable BLE presence:
+
+```yaml
+presence:
+  home_score_threshold: 2.0
+  ping_enabled: false
+  router_command: ""
+  ble_enabled: true
+  ble_weight: 2.0
+  ble_scan_seconds: 6.0
+  ble_company_id: 76
+  ble_uuid: "01122334-4556-6778-899a-abbccddeeff0"
+  ble_major: 1
+  ble_minor: 1
+  ble_min_rssi:
+```
+
+`ble_company_id: 76` is Apple's iBeacon manufacturer ID, `0x004C` in decimal. The UUID,
+major, and minor above match the default firmware for the XIAO beacon. Keep
+`ble_scan_seconds` comfortably above the beacon interval; with a 2 second advertising
+interval, 6 seconds gives the Pi several chances to hear it.
+
+If the Pi can hear the beacon from too far away, set an RSSI floor:
+
+```yaml
+presence:
+  ble_min_rssi: -80
+```
+
+Tune that value in the actual room. Less negative is stricter: `-70` is nearer than `-85`.
 
 ### iPhone Presence
 
